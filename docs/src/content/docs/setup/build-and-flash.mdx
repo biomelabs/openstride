@@ -1,0 +1,82 @@
+---
+title: Build & Flash
+description: Build firmware and flash to an nRF54L15 or nRF52840 XIAO Sense.
+---
+
+import { Tabs, TabItem, Steps, Aside } from '@astrojs/starlight/components';
+
+<Aside type="note">
+  The nRF54L15 XIAO Sense is the primary target. The nRF52840 XIAO Sense is a prototyping
+  stand-in. They use different board targets and flash methods.
+</Aside>
+
+## Build
+
+<Tabs>
+  <TabItem label="nRF54L15 XIAO Sense">
+
+    ```bash
+    uv run west build -b xiao_nrf54l15/nrf54l15/cpuapp .
+    ```
+
+    Or use the Makefile shortcut, which defaults to this target:
+
+    ```bash
+    make all
+    ```
+
+  </TabItem>
+  <TabItem label="nRF52840 XIAO Sense">
+
+    ```bash
+    uv run west build -b xiao_ble/nrf52840/sense .
+    ```
+
+  </TabItem>
+</Tabs>
+
+## Flash
+
+<Tabs>
+  <TabItem label="nRF54L15 XIAO Sense">
+
+    The nRF54L15 has an onboard CMSIS-DAPv2 debugger and flashes via nrfutil:
+
+    ```bash
+    make flash
+    ```
+
+    <Aside type="note">
+      WSL2 users: the board must be attached via USB passthrough before this will work.
+      See [Environment -- USB passthrough](../environment#usb-passthrough-wsl2-only).
+    </Aside>
+
+  </TabItem>
+  <TabItem label="nRF52840 XIAO Sense">
+
+    The nRF52840 has no onboard debugger and uses the UF2 bootloader.
+
+    <Steps>
+
+    1. Enter bootloader mode by double-tapping the reset button. A drive named `XIAO BLE`
+       should mount on your host.
+
+    2. Copy the firmware image to the mounted drive:
+
+       ```bash
+       make copyfw BOARD=<your_board>
+       ```
+
+       On WSL2, the UF2 drive appears at `/mnt/d` (or similar) and `make copyfw` handles
+       the copy automatically.
+
+    </Steps>
+
+    <Aside type="note">
+      Verify a file named `INFO_UF2.TXT` exists at the root of the mounted drive before
+      copying. If the drive does not appear, try the double-tap again -- the timing window
+      is short.
+    </Aside>
+
+  </TabItem>
+</Tabs>

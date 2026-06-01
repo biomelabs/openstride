@@ -1,0 +1,3 @@
+mainmenu "OpenStride"
+
+source "Kconfig.zephyr"

@@ -1,0 +1,138 @@
+---
+title: Environment
+description: Install system dependencies, direnv, and nrfutil.
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+
+## System dependencies
+
+<Tabs>
+  <TabItem label="macOS">
+
+    ```bash
+    brew install direnv cmake ninja libusb openocd llvm
+    ```
+
+    `llvm` is keg-only. Add it to your PATH so `clangd` is available to your editor:
+
+    ```bash
+    # zsh
+    echo 'export PATH="/opt/homebrew/opt/llvm/bin:$PATH"' >> ~/.zshrc
+
+    # bash
+    echo 'export PATH="/opt/homebrew/opt/llvm/bin:$PATH"' >> ~/.bash_profile
+    ```
+
+  </TabItem>
+  <TabItem label="Linux / WSL2">
+
+    ```bash
+    sudo apt install direnv clangd cmake ninja-build libusb-1.0-0-dev libudev-dev openocd
+    ```
+
+  </TabItem>
+</Tabs>
+
+## `direnv` shell hook
+
+`direnv` needs a one-time hook in your shell config to activate `.envrc` files automatically.
+Add the appropriate line and restart your shell (or `source` the config file).
+
+<Tabs>
+  <TabItem label="bash">
+
+    ```bash
+    echo 'eval "$(direnv hook bash)"' >> ~/.bashrc
+    ```
+
+  </TabItem>
+  <TabItem label="zsh">
+
+    ```bash
+    echo 'eval "$(direnv hook zsh)"' >> ~/.zshrc
+    ```
+
+  </TabItem>
+  <TabItem label="fish">
+
+    ```fish
+    echo 'direnv hook fish | source' >> ~/.config/fish/config.fish
+    ```
+
+    <Aside type="note">
+      `.envrc` files are always evaluated by bash regardless of your login shell, so Fish users
+      do not need to do anything differently.
+    </Aside>
+
+  </TabItem>
+</Tabs>
+
+## `nrfutil`
+
+Required for flashing via the CMSIS-DAPv2 interface on the nRF54L15 XIAO.
+
+<Tabs>
+  <TabItem label="macOS">
+
+    ```bash
+    curl https://files.nordicsemi.com/artifactory/swtools/external/nrfutil/executables/universal-apple-darwin/nrfutil -o nrfutil
+    chmod +x nrfutil
+    sudo mv nrfutil /usr/local/bin
+    nrfutil install device
+    ```
+
+    <Aside type="caution">
+      macOS may block the binary on first run because it is unsigned. If you see a security warning, run:
+
+      ```bash
+      xattr -dr com.apple.quarantine /usr/local/bin/nrfutil
+      ```
+
+      Or go to System Settings > Privacy & Security and click Allow after the first blocked attempt.
+    </Aside>
+
+  </TabItem>
+  <TabItem label="Linux / WSL2">
+
+    Pick the binary for your host architecture:
+
+    ```bash
+    # x86_64 host
+    curl https://files.nordicsemi.com/artifactory/swtools/external/nrfutil/executables/x86_64-unknown-linux-gnu/nrfutil -o nrfutil
+
+    # aarch64 host
+    curl https://files.nordicsemi.com/artifactory/swtools/external/nrfutil/executables/aarch64-unknown-linux-gnu/nrfutil -o nrfutil
+
+    # either host
+    chmod +x nrfutil
+    sudo mv nrfutil /usr/local/bin
+    nrfutil install device
+    ```
+
+  </TabItem>
+</Tabs>
+
+If you see a permissions error when flashing, add yourself to the `dialout` group and log out and back in:
+
+```bash
+sudo usermod -aG dialout $USER
+```
+
+## USB passthrough (WSL2 only)
+
+Required for nrfutil and OpenOCD to see the board from inside WSL2. Uses `usbipd-win`.
+Repeat each time the board is unplugged.
+
+```powershell
+# PowerShell (admin)
+winget install --interactive --exact dorssel.usbipd-win
+usbipd list  # note BUSID, Seeed's VID is 2886
+usbipd bind --busid YOUR_BUSID
+usbipd attach --wsl --busid YOUR_BUSID
+```
+
+```bash
+# WSL2 -- confirm the device is listed
+lsusb
+```

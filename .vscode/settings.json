@@ -1,0 +1,13 @@
+{
+  "clangd.arguments": [
+    "--query-driver=${env:HOME}/zephyr-sdk-*/arm-zephyr-eabi/bin/arm-zephyr-eabi-*",
+    "--background-index",
+    "-j=4"
+  ],
+  "[c]": {
+    "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"
+  },
+  "[cpp]": {
+    "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"
+  }
+}

@@ -1,0 +1,38 @@
+---
+title: OpenStride
+description: Open-source foot pod for running dynamics over ANT+ and BLE.
+template: splash
+hero:
+  tagline: Open-source running dynamics over ANT+ and BLE. Built on Zephyr RTOS.
+  actions:
+    - text: Read the docs
+      link: setup
+      icon: right-arrow
+      variant: primary
+    - text: GitHub
+      link: https://github.com/biomelabs/openstride
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+OpenStride is an open-source alternative to commercial running power meter devices.
+It measures pace, cadence, power, ground contact time, vertical oscillation, and
+leg spring stiffness, communicating with Garmin and other running watches via ANT+
+and BLE — using hardware you can source yourself and firmware you can read and modify.
+
+<CardGrid stagger>
+  <Card title="Get the hardware" icon="laptop">
+    The OpenStride dev kit is made up of a handful of off-the-shelf breakout boards. See the [**hardware overview**](hardware) for the full bill of materials.
+  </Card>
+  <Card title="Start building" icon="rocket">
+    Zephyr RTOS + nRF Connect SDK. Follow the [**setup guide**](setup) to set up your environment and flash your first build.
+  </Card>
+  <Card title="Understand the algorithm" icon="information">
+    Stride detection uses a ZUPT-based dead reckoning pipeline. Algorithm docs coming soon.
+  </Card>
+  <Card title="Contribute" icon="add-document">
+    ANT+ work requires adopter access, but IMU, algorithm, and BLE contributions need nothing proprietary. See [CONTRIBUTING.md](https://github.com/biomelabs/openstride/blob/main/CONTRIBUTING.md) and our [open issues](https://github.com/biomelabs/openstride/issues).
+  </Card>
+</CardGrid>

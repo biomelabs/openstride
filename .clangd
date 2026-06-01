@@ -1,0 +1,6 @@
+CompileFlags:
+  CompilationDatabase: build/
+  Remove:
+    - -fno-printf-return-value
+    - -mfp16-format=ieee
+    - -fno-reorder-functions

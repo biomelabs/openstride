@@ -1,0 +1,8 @@
+/* XIAO nRF52840 Sense
+ * IMU: LSM6DS3TR-C (Zephyr lsm6dsl driver) at I2C0 addr 0x6a
+ * Power enable: P1.08 (active-high, high-drive), data-ready IRQ: P0.11
+ */
+
+/ {
+	
+};

@@ -1,0 +1,28 @@
+cmake_minimum_required(VERSION 3.20.0)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
+project(openstride)
+
+target_sources(app PRIVATE
+    apps/sensor/src/main.c
+    apps/sensor/src/algo/foot/stride.c
+    apps/sensor/src/sdm/sdm_encode.c
+    apps/sensor/src/transport/transport.c
+)
+
+# IMU driver requires lsm6dsl-compatible device in the device tree.
+if(CONFIG_LSM6DSL)
+    target_sources(app PRIVATE apps/sensor/src/imu/imu.c)
+endif()
+
+# ANT transport is opt-in (sdk-ant private repo).
+if(CONFIG_ANT)
+    target_sources(app PRIVATE apps/sensor/src/transport/ant/ant_transport.c)
+endif()
+
+# BLE RSC service only when the BT stack is present.
+if(CONFIG_BT)
+    target_sources(app PRIVATE apps/sensor/src/transport/ble/rsc_service.c)
+endif()
+
+target_include_directories(app PRIVATE apps/sensor/src)

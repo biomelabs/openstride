@@ -1,0 +1,49 @@
+---
+title: ANT+ SDK
+description: Set up access to the proprietary ANT+ SDK for transport development.
+---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
+
+The ANT+ SDK (`sdk-ant`) is proprietary and optional. You do not need it to work on algorithms,
+IMU drivers, or BLE transport. Enable it when you want to develop or test the ANT+ SDM or
+Running Dynamics profiles against a Garmin head unit.
+
+## Compatibility
+
+Currently this project is pinned to `v3.2.4` of the nRF Connect SDK (NCS) and 
+`v2.1.0` of the ANT+ SDK.
+
+<Aside type="caution">
+  Do not use NCS `v3.3.x` for ANT work until it appears in the compatibility table above.
+</Aside>
+
+## Get access
+
+<Steps>
+
+1. Register at [thisisant.com](https://www.thisisant.com/register/).
+
+2. Become an [ANT+ Adopter](https://www.thisisant.com/business/go-ant/levels-and-benefits).
+   No payment is required unless you sell products built on ANT+.
+
+3. [Accept the nRF license agreement](https://thisisant.com/developer/ant/nrf-connect-sdk).
+   This grants access to the `sdk-ant` private GitHub repository via your personal account.
+
+</Steps>
+
+## Enable the ANT+ west group
+
+Once you have access, enable the group and fetch the SDK:
+
+```bash
+uv run west config manifest.group-filter -- +ant
+uv run west update
+```
+
+To go back to working without ANT+:
+
+```bash
+uv run west config manifest.group-filter -- -ant
+uv run west update
+```

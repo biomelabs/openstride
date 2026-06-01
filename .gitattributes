@@ -1,0 +1,6 @@
+* text=auto eol=lf
+
+# don't mess with these binary files
+*.png binary
+*.jpg binary
+*.gif binary

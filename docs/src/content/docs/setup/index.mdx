@@ -1,0 +1,60 @@
+---
+title: Setup
+description: Get your development environment ready for OpenStride.
+---
+
+import { LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+OpenStride development has two independent paths: building and flashing firmware to real hardware,
+or running radio simulations with BabbleSim. Both share the same environment and workspace setup.
+ANT+ SDK access is optional (required for testing ANT+ transport) and stacks on top of either path.
+
+## Build and flash to hardware
+
+Complete these in order.
+
+<CardGrid>
+  <LinkCard
+    title="1. Environment"
+    href="../environment"
+    description="Install system dependencies, direnv, and nrfutil."
+  />
+  <LinkCard
+    title="2. Workspace"
+    href="../workspace"
+    description="Initialize the west workspace and install the Zephyr SDK."
+  />
+  <LinkCard
+    title="3. Build & Flash"
+    href="../build-and-flash"
+    description="Build firmware and flash to an nRF54L15 or nRF52840."
+  />
+  <LinkCard
+  title="ANT+ SDK (optional)"
+  href="../ant-plus"
+  description="Required for working on the ANT+ transport layer."
+/>
+</CardGrid>
+
+## Simulate with BabbleSim
+
+BabbleSim requires Linux or WSL2. If you have already completed Environment and Workspace
+for the hardware path, skip to Simulation.
+
+<CardGrid>
+  <LinkCard
+    title="1. Environment"
+    href="/setup/environment"
+    description="Install system dependencies, direnv, and nrfutil."
+  />
+  <LinkCard
+    title="2. Workspace"
+    href="/setup/workspace"
+    description="Initialize the west workspace and install the Zephyr SDK."
+  />
+  <LinkCard
+    title="3. Simulation"
+    href="/setup/simulation"
+    description="Build BabbleSim and run radio simulations. Linux / WSL2 only."
+  />
+</CardGrid>

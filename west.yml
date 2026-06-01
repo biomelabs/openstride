@@ -1,0 +1,30 @@
+manifest:
+  version: "1.0"
+
+  remotes:
+    - name: nrfconnect
+      url-base: https://github.com/nrfconnect
+    - name: ant-nrfconnect
+      url-base: https://github.com/ant-nrfconnect
+
+  projects:
+    - name: nrf
+      remote: nrfconnect
+      repo-path: sdk-nrf
+      revision: v3.2.4
+      path: nrf
+      import:
+        path-prefix: vendor
+    - name: sdk-ant
+      remote: ant-nrfconnect
+      revision: v2.1.0
+      path: vendor/sdk-ant
+      groups:
+        - ant
+
+  # ANT is opt-in. Users without private repo access can run `west update`.
+  group-filter:
+    - -ant
+
+  self:
+    path: .

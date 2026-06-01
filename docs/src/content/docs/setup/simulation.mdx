@@ -1,0 +1,64 @@
+---
+title: Simulation
+description: Build BabbleSim and run radio simulations.
+---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
+
+<Aside type="caution">
+  BabbleSim uses the Zephyr POSIX architecture and requires Linux or WSL2. It will not run on macOS.
+</Aside>
+
+BabbleSim lets you simulate ANT+ and BLE radio traffic between multiple virtual devices
+without any hardware. Simulation targets build against the `nrf54l15bsim/nrf54l15/cpuapp` board.
+
+## Install `gcc-multilib`
+
+BabbleSim compiles 32-bit POSIX binaries and requires the multilib toolchain:
+
+```bash
+sudo apt install gcc-multilib
+```
+
+## Enable the BabbleSim west group
+
+<Steps>
+
+1. Enable the group and fetch the BabbleSim sources:
+
+   ```bash
+   uv run west config manifest.group-filter -- +babblesim
+   uv run west update
+   ```
+
+2. Build BabbleSim:
+
+   ```bash
+   cd $BSIM_OUT_PATH && make everything -j$(nproc)
+   ```
+
+   `BSIM_OUT_PATH` is exported by `.envrc`. If it is not set, run `direnv allow` from the
+   repo root first, then re-enter the directory.
+
+</Steps>
+
+## Run a simulation
+
+Build a BabbleSim target and run it:
+
+```bash
+uv run west build -b nrf54l15bsim/nrf54l15/cpuapp .
+```
+
+Simulation executables are written to `$BSIM_OUT_PATH/bin/`. Refer to the
+[BabbleSim documentation](https://babblesim.github.io/) for how to wire up multiple
+device executables and the physical layer simulator.
+
+## Disabling BabbleSim
+
+To go back to the default without BabbleSim:
+
+```bash
+uv run west config manifest.group-filter -- -babblesim
+uv run west update
+```

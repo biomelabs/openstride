@@ -1,0 +1,84 @@
+---
+title: Workspace
+description: Initialize the west workspace and install the Zephyr SDK.
+---
+
+import { Steps, Aside, FileTree } from '@astrojs/starlight/components';
+
+These steps are the same on all platforms, and assume you've completed [environment setup](../environment).
+Start by `cd`-ing to the repo root.
+
+## Initialize
+
+<Steps>
+
+1. Sync the Python environment and allow `direnv` to activate:
+
+   ```bash
+   uv sync
+   direnv allow
+   ```
+
+2. Initialize the west workspace and fetch all dependencies:
+
+   ```bash
+   uv run west init -l .
+   uv run west update
+   ```
+
+3. Export the Zephyr CMake package and install the toolchains:
+
+   ```bash
+   uv run west zephyr-export
+
+   # macOS
+   uv run west sdk install --gnu-toolchains arm-zephyr-eabi
+
+   # Linux
+   uv run west sdk install --gnu-toolchains arm-zephyr-eabi --gnu-toolchains x86_64-zephyr-elf
+   ```
+
+   <Aside type="note">
+     On macOS, `x86_64-zephyr-elf` is not needed. It is only used for native simulation
+     targets on Linux, so you can omit that flag.
+   </Aside>
+
+</Steps>
+
+This tracks NCS `v3.2.4` via `west.yml`. The ANT+ and BabbleSim west groups are disabled by
+default, so `west update` will not attempt to fetch them or fail without credentials.
+
+## Workspace layout
+
+After `west update`, the repository should look roughly like this:
+ 
+<FileTree>
+- apps/  (firmware applications)
+- boards/  (per-board Kconfig and devicetree overlays)
+- docs/  (this site)
+- scripts/
+- tests/
+- vendor/  (populated by west update, not in git)
+  - nrf/
+  - zephyr/
+  - modules/
+  - tools/
+    - bsim/  (populated if babblesim is enabled)
+- CMakeLists.txt
+- Kconfig
+- Makefile
+- prj.conf
+- west.yml
+</FileTree>
+
+## What .envrc does
+
+`direnv allow` activates `.envrc` automatically whenever you enter the repo directory.
+It sets up the following:
+
+- `ZEPHYR_BASE` is required because Zephyr is under `vendor/`, not at workspace root
+- `BSIM_OUT_PATH` and `BSIM_COMPONENTS_PATH` are used by BabbleSim builds
+- Activates the `.venv` managed by `uv sync`
+- Sources `zephyr-env.sh` given Zephyr is present
+
+You should not need to edit `.envrc` unless you change the vendor directory layout.

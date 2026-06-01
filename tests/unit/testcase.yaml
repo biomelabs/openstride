@@ -1,0 +1,9 @@
+tests:
+  openstride.sdm.unit:
+    tags:
+      - unit
+      - sdm
+    platform_allow:
+      - native_sim
+    integration_platforms:
+      - native_sim
