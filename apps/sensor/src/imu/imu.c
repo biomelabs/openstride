@@ -8,7 +8,7 @@
 
 LOG_MODULE_REGISTER(imu, LOG_LEVEL_INF);
 
-static const struct device *imu_dev = DEVICE_DT_GET_ONE(st_lsm6dsl);
+static const struct device *imu_dev = DEVICE_DT_GET(DT_ALIAS(imu0));
 static const struct sensor_trigger imu_trigger = {
     .type = SENSOR_TRIG_DATA_READY,
     .chan = SENSOR_CHAN_ACCEL_XYZ,

@@ -4,7 +4,7 @@
 #include "algo/foot/stride.h"
 #include "transport/transport.h"
 
-#if DT_HAS_COMPAT_STATUS_OKAY(st_lsm6dsl)
+#if DT_NODE_EXISTS(DT_ALIAS(imu0))
 #include "imu/imu.h"
 #endif
 
@@ -91,7 +91,7 @@ static void notify_sdm_if_due(const sdm_data_t *snap, bool force)
 	last_notify_ms = now_ms;
 }
 
-#if DT_HAS_COMPAT_STATUS_OKAY(st_lsm6dsl)
+#if DT_NODE_EXISTS(DT_ALIAS(imu0))
 static void on_imu(const imu_sample_t *s, void *ctx)
 {
 	ARG_UNUSED(ctx);
@@ -136,7 +136,7 @@ int main(void)
 	}
 #endif
 
-#if DT_HAS_COMPAT_STATUS_OKAY(st_lsm6dsl)
+#if DT_NODE_EXISTS(DT_ALIAS(imu0))
 	int imu_err = imu_init();
 	if (imu_err == 0) {
 		imu_err = imu_start(on_imu, NULL);

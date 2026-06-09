@@ -10,8 +10,8 @@ target_sources(app PRIVATE
     apps/sensor/src/transport/transport.c
 )
 
-# IMU driver requires lsm6dsl-compatible device in the device tree.
-if(CONFIG_LSM6DSL)
+# IMU driver: lsm6dsl (nRF52840 Sense) or lsm6dso (nRF54L15), selected via imu0 alias.
+if(CONFIG_LSM6DSL OR CONFIG_LSM6DSO)
     target_sources(app PRIVATE apps/sensor/src/imu/imu.c)
 endif()
 
