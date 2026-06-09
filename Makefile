@@ -52,7 +52,7 @@ debug:
 
 setup:
 	uv sync
-	@if [ ! -d .west ]; then uv run west init -l .; fi
+	@if [ ! -d ../.west ]; then uv run west init -l .; fi
 	@if [ "$(ANT)" = "1" ]; then \
 		uv run west update --group-filter +ant; \
 	else \
@@ -64,4 +64,4 @@ unit:
 	uv run west twister -T tests/unit --inline-logs -O results
 
 teardown:
-	rm -rf vendor/ .west/ .venv/
+	rm -rf nrf/ vendor/ ../.west/ .venv/

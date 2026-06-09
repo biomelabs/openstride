@@ -12,19 +12,16 @@ manifest:
       remote: nrfconnect
       repo-path: sdk-nrf
       revision: v3.2.4
-      path: nrf
+      path: openstride/nrf
       import:
-        path-prefix: vendor
+        path-prefix: openstride/vendor
     - name: sdk-ant
       remote: ant-nrfconnect
       revision: v2.1.0
-      path: vendor/sdk-ant
+      path: openstride/vendor/sdk-ant
       groups:
         - ant
 
   # ANT is opt-in. Users without private repo access can run `west update`.
   group-filter:
     - -ant
-
-  self:
-    path: .
