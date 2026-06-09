@@ -8,7 +8,17 @@ import { Steps, Aside, FileTree } from '@astrojs/starlight/components';
 These steps are the same on all platforms, and assume you've completed [environment setup](../environment).
 Start by `cd`-ing to the repo root.
 
-## Initialize
+## Automatic setup
+
+We have a convenience Makefile target that sets up everything for you:
+
+```bash
+make setup
+```
+
+## Manual setup
+
+If you prefer to set up Zephyr manually:
 
 <Steps>
 
@@ -32,10 +42,10 @@ Start by `cd`-ing to the repo root.
    uv run west zephyr-export
 
    # macOS
-   uv run west sdk install --gnu-toolchains arm-zephyr-eabi
+   uv run west sdk install -t arm-zephyr-eabi
 
    # Linux
-   uv run west sdk install --gnu-toolchains arm-zephyr-eabi --gnu-toolchains x86_64-zephyr-elf
+   uv run west sdk install -t arm-zephyr-eabi x86_64-zephyr-elf
    ```
 
    <Aside type="note">

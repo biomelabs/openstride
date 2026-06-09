@@ -59,9 +59,14 @@ setup:
 		uv run west update; \
 	fi
 	uv run west zephyr-export
+	@if [ "$$(uname -s)" = "Darwin" ]; then \
+		uv run west sdk install -t arm-zephyr-eabi; \
+	else \
+		uv run west sdk install -t arm-zephyr-eabi x86_64-zephyr-elf; \
+	fi
 
 unit:
 	uv run west twister -T tests/unit --inline-logs -O results
 
 teardown:
-	rm -rf nrf/ vendor/ ../.west/ .venv/
+	rm -rf vendor/ ../.west/ .venv/

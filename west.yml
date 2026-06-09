@@ -12,7 +12,7 @@ manifest:
       remote: nrfconnect
       repo-path: sdk-nrf
       revision: v3.2.4
-      path: openstride/nrf
+      path: nrf
       import:
         path-prefix: openstride/vendor
     - name: sdk-ant
