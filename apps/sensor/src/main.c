@@ -105,7 +105,7 @@ static void on_imu(const imu_sample_t *s, void *ctx)
 	latest_sdm = data;
 	k_mutex_unlock(&sdm_mtx);
 
-	notify_sdm_if_due(&data, stride_hit);
+	ARG_UNUSED(stride_hit);
 }
 #endif /* st_lsm6dsl */
 

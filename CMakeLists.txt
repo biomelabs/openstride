@@ -10,7 +10,7 @@ target_sources(app PRIVATE
     apps/sensor/src/transport/transport.c
 )
 
-# IMU driver: lsm6dsl (nRF52840 Sense) or lsm6dso (nRF54L15), selected via imu0 alias.
+# IMU driver: lsm6dsl (LSM6DS3TR-C on both Sense boards), selected via imu0 alias.
 if(CONFIG_LSM6DSL OR CONFIG_LSM6DSO)
     target_sources(app PRIVATE apps/sensor/src/imu/imu.c)
 endif()

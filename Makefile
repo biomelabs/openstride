@@ -12,8 +12,14 @@ BOARD_ID_PATTERN ?= XIAO.nRF
 ANT ?= 1
 
 UF2_PATH = $(BUILD_DIR)/$(PROJECT)/zephyr/zephyr.uf2
+MERGED_HEX = $(BUILD_DIR)/merged.hex
 
-.PHONY: all clean flash debug setup teardown unit
+# optional CMSIS-DAP probe serial (e.g. PROBE=06E4B471)
+PROBE ?=
+# pyOCD target name for erase/flash/recover targets
+TARGET ?= nrf54l
+
+.PHONY: all clean erase flash recover debug setup teardown unit
 
 all:
 	uv run west build -b $(BOARD) -d $(BUILD_DIR) $(APP)
@@ -21,8 +27,20 @@ all:
 clean:
 	rm -rf $(BUILD_PARENT)
 
-flash:
-	uv run west flash --runner openocd -d $(BUILD_DIR)
+# mass-erase only, unlocks write-protection (e.g. APPROTECT) without flashing
+erase:
+	uv run python scripts/recovery.py --mode erase \
+		$(if $(PROBE),--probe $(PROBE),) --target $(TARGET)
+
+# flash without erase, builds first
+flash: all
+	uv run python scripts/recovery.py --mode flash --firmware $(MERGED_HEX) \
+		$(if $(PROBE),--probe $(PROBE),) --target $(TARGET)
+
+# full recovery (mass-erase then flash), builds first
+recover: all
+	uv run python scripts/recovery.py --mode factory --firmware $(MERGED_HEX) \
+		$(if $(PROBE),--probe $(PROBE),) --target $(TARGET)
 
 copyfw:
 	@if [ ! -f "$(UF2_PATH)" ]; then \

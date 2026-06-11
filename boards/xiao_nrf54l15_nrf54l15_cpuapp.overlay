@@ -1,14 +1,25 @@
-&i2c30 {
-	lsm6dso: lsm6dso@6a {
-		compatible = "st,lsm6dso";
-		reg = <0x6a>;
-		irq-gpios = <&gpio0 2 GPIO_ACTIVE_HIGH>;
-		status = "okay";
-	};
-};
+/*
+ * XIAO nRF54L15 Sense
+ * IMU: LSM6DS3TR-C (Zephyr lsm6dsl driver) at I2C30 addr 0x6a
+ * Data-ready IRQ: P0.02
+ *
+ * Upstream board DTS uses st,lsm6dso, but the populated part is LSM6DS3TR-C
+ * (WHO_AM_I 0x6A). The lsm6dso driver rejects that ID and never becomes ready.
+ */
 
 / {
 	aliases {
-		imu0 = &lsm6dso;
+		imu0 = &lsm6ds3tr_c;
+	};
+};
+
+&i2c30 {
+	/delete-node/ lsm6dso@6a;
+
+	lsm6ds3tr_c: lsm6ds3tr-c@6a {
+		compatible = "st,lsm6dsl";
+		reg = <0x6a>;
+		irq-gpios = <&gpio0 2 GPIO_ACTIVE_HIGH>;
+		status = "okay";
 	};
 };

@@ -1446,7 +1446,7 @@ requires-dist = [
     { name = "pykwalify", specifier = ">=1.8.0" },
     { name = "pylink-square", specifier = ">=1.7.0" },
     { name = "pylint", specifier = ">=3" },
-    { name = "pyocd", specifier = ">=0.36.0" },
+    { name = "pyocd", specifier = ">=0.38.0" },
     { name = "pyserial", specifier = ">=3.5" },
     { name = "pytest", specifier = ">=9.0.3" },
     { name = "python-can", specifier = ">=4.3.0" },
