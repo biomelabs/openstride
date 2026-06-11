@@ -2,6 +2,7 @@
 
 #include <errno.h>
 #include <zephyr/device.h>
+#include <zephyr/drivers/i2c.h>
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
@@ -169,6 +170,24 @@ int imu_init(void)
     ext_accel_ready = device_is_ready(ext_accel_dev);
     ext_accel_fetch_ok = ext_accel_ready;
     if (ext_accel_ready) {
+        /*
+         * The adxl345 driver initialises DATA_FORMAT to RANGE_8G (0x02) without
+         * FULL_RES (0x08).  RANGE_16G | FULL_RES (0x0B) puts the ADXL375 into
+         * its full +/-200 g 13-bit mode (49 mg/LSB, ~20 counts per g), which is
+         * what ADXL375_SCALE assumes.  RANGE_8G selects a +/-100 g sub-range
+         * (~24 mg/LSB, ~41 counts per g) that throws the scale correction off.
+         */
+        const struct i2c_dt_spec adxl_i2c =
+            I2C_DT_SPEC_GET(DT_ALIAS(accel0));
+        uint8_t data_format_cmd[] = {0x31, 0x0B}; /* DATA_FORMAT = RANGE_16G | FULL_RES */
+        int i2c_err = i2c_write_dt(&adxl_i2c, data_format_cmd, sizeof(data_format_cmd));
+
+        if (i2c_err < 0) {
+            LOG_WRN("ADXL375 FULL_RES enable failed: %d", i2c_err);
+        } else {
+            LOG_INF("ADXL375 FULL_RES enabled (13-bit, 49 mg/LSB)");
+        }
+
         /*
          * adxl345_read_sample() busy-polls DATA_READY (2 I2C reads per loop)
          * when ADXL345_TRIGGER is not set.  Set ODR to 400 Hz so a fresh

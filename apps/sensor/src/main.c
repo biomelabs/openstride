@@ -1,3 +1,5 @@
+#include <math.h>
+
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/atomic.h>
@@ -129,6 +131,8 @@ static void notify_sdm_if_due(const sdm_data_t *snap, bool force)
 }
 
 #if DT_NODE_EXISTS(DT_ALIAS(imu0))
+static uint32_t imu_cb_count;
+
 static void on_imu(const imu_sample_t *s, void *ctx)
 {
 	ARG_UNUSED(ctx);
@@ -138,11 +142,25 @@ static void on_imu(const imu_sample_t *s, void *ctx)
 
 	bool stride_hit = stride_detector_update(&detector, accel, gyro, s->timestamp_us, &data);
 
+	imu_cb_count++;
+	if ((imu_cb_count % 104U) == 1U) {
+		float an = sqrtf(accel[0]*accel[0] + accel[1]*accel[1] + accel[2]*accel[2]);
+		float gn = sqrtf(gyro[0]*gyro[0] + gyro[1]*gyro[1] + gyro[2]*gyro[2]);
+		/* expect an=~9.8 m/s^2 at rest, if ~1.0 the driver is returning gs */
+		LOG_INF("DBG accel_norm=%.3f gyro_norm=%.3f a=(%d,%d,%d)mm/s2 strides=%u",
+			(double)an, (double)gn,
+			(int)(accel[0]*1000), (int)(accel[1]*1000), (int)(accel[2]*1000),
+			data.stride_count);
+	}
+
 	k_mutex_lock(&sdm_mtx, K_FOREVER);
 	latest_sdm = data;
 	k_mutex_unlock(&sdm_mtx);
 
 	if (stride_hit) {
+		LOG_INF("DBG STRIDE len=%.3fm spd=%.3fm/s cad=%.1fspm",
+			(double)data.stride_length_m, (double)data.speed_mps,
+			(double)data.cadence_spm);
 		atomic_set(&stride_notify_pending, 1);
 	}
 }
