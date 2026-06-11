@@ -6,6 +6,12 @@
  * Upstream board DTS uses st,lsm6dso, but the populated part is LSM6DS3TR-C
  * (WHO_AM_I 0x6A). The lsm6dso driver rejects that ID and never becomes ready.
  *
+ * External Qwiic aux sensors on D4/D5 (i2c22, P1.10/P1.11):
+ *   accel0: ADXL375 high-g accel at 0x53 (register-compatible with ADXL345)
+ *   bmp388: BMP388 barometer at 0x77
+ * imu.c prefers accel0 for acceleration; falls back to imu0 (LSM6) if absent.
+ * Gyro always comes from imu0 (ADXL375 has no gyro).
+ *
  * Battery ADC: vbat_pwr regulator (P1.15) gates a voltage divider whose
  * output is on P1.14 (SAADC AIN7, channel@7 in xiao_nrf54l15_common.dtsi).
  * channel@7 is already defined upstream; we just route it to zephyr,user.
@@ -14,6 +20,7 @@
 / {
 	aliases {
 		imu0 = &lsm6ds3tr_c;
+		accel0 = &adxl375;
 	};
 
 	zephyr,user {
@@ -28,6 +35,24 @@
 		compatible = "st,lsm6dsl";
 		reg = <0x6a>;
 		irq-gpios = <&gpio0 2 GPIO_ACTIVE_HIGH>;
+		status = "okay";
+	};
+};
+
+&i2c22 {
+  status = "okay";
+
+	/* ADXL375 high-g accelerometer (same register map as ADXL345, same DEVID 0xE5) */
+	adxl375: adxl375@53 {
+		compatible = "adi,adxl345";
+		reg = <0x53>;
+		status = "okay";
+	};
+
+	/* BMP388 barometric pressure sensor (SDO=VCC -> 0x77) */
+	bmp388: bmp388@77 {
+		compatible = "bosch,bmp388";
+		reg = <0x77>;
 		status = "okay";
 	};
 };

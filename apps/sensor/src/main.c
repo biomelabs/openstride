@@ -23,8 +23,9 @@
 LOG_MODULE_REGISTER(main, LOG_LEVEL_INF);
 
 /* Bluetooth RSC Measurement: max 4 notifications per second. */
-#define RSC_NOTIFY_MIN_INTERVAL_MS 250
-#define RSC_NOTIFY_POLL_MS         50
+#define RSC_NOTIFY_MIN_INTERVAL_MS  250
+#define RSC_NOTIFY_HEARTBEAT_MS    1000
+#define RSC_NOTIFY_POLL_MS          50
 
 #if IS_ENABLED(CONFIG_BT)
 /* advertising data: flags + service UUIDs */
@@ -111,12 +112,14 @@ static bool sdm_report_changed(const sdm_data_t *snap, const sdm_data_t *prev)
 static void notify_sdm_if_due(const sdm_data_t *snap, bool force)
 {
 	int64_t now_ms = k_uptime_get();
+	int64_t elapsed_ms = now_ms - last_notify_ms;
 
-	if (!force && ((now_ms - last_notify_ms) < RSC_NOTIFY_MIN_INTERVAL_MS)) {
-		return;
-	}
-
-	if (!force && !sdm_report_changed(snap, &last_notified_sdm)) {
+	if (force || (elapsed_ms >= RSC_NOTIFY_HEARTBEAT_MS)) {
+		/* send because stride event or 1-second keepalive */
+	} else if ((elapsed_ms >= RSC_NOTIFY_MIN_INTERVAL_MS) &&
+		   sdm_report_changed(snap, &last_notified_sdm)) {
+		/* send because data changed and rate limit passed */
+	} else {
 		return;
 	}
 

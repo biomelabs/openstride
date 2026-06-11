@@ -10,8 +10,9 @@ target_sources(app PRIVATE
     apps/sensor/src/transport/transport.c
 )
 
-# IMU driver: lsm6dsl (LSM6DS3TR-C on both Sense boards), selected via imu0 alias.
-if(CONFIG_LSM6DSL OR CONFIG_LSM6DSO)
+# IMU driver: imu.c uses imu0 (LSM6DS3TR-C) for timing/gyro and optionally
+# accel0 (ADXL375 via ADXL345 driver) as the preferred accel source.
+if(CONFIG_LSM6DSL OR CONFIG_LSM6DSO OR CONFIG_ADXL345)
     target_sources(app PRIVATE apps/sensor/src/imu/imu.c)
 endif()
 
