@@ -1,10 +1,29 @@
 /* XIAO nRF52840 Sense
  * IMU: LSM6DS3TR-C (Zephyr lsm6dsl driver) at I2C0 addr 0x6a
  * Power enable: P1.08 (active-high, high-drive), data-ready IRQ: P0.11
+ * Battery ADC: VBAT through 1 M + 1 M voltage divider to P0.31 (AIN7)
+ *   → ADC reads VBAT/2; battery.c applies ×2 to recover VBAT.
  */
+
+#include <dt-bindings/adc/nrf-saadc.h>
 
 / {
 	aliases {
 		imu0 = &lsm6ds3tr_c;
+	};
+
+	zephyr,user {
+		io-channels = <&adc 7>;
+	};
+};
+
+&adc {
+	channel@7 {
+		reg = <7>;
+		zephyr,gain = "ADC_GAIN_1_6";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,input-positive = <NRF_SAADC_AIN7>;
+		zephyr,resolution = <12>;
 	};
 };

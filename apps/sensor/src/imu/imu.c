@@ -16,8 +16,16 @@ static const struct sensor_trigger imu_trigger = {
 static imu_data_cb_t user_cb;
 static void *user_ctx;
 static uint32_t sample_count;
-/* Use a higher ODR on nRF52840 Sense to improve ZUPT integration fidelity. */
+
+#if defined(CONFIG_SOC_NRF54L15_CPUAPP)
+/*
+ * nRF54L15 runs the SoftDevice Controller: 416 Hz IMU + stride math starves
+ * the link layer and causes supervision timeouts after a few seconds.
+ */
+#define IMU_TARGET_ODR_HZ 104
+#else
 #define IMU_TARGET_ODR_HZ 416
+#endif
 
 static void imu_trigger_handler(const struct device *dev, const struct sensor_trigger *trig) {
     struct sensor_value ax, ay, az, gx, gy, gz;
@@ -43,12 +51,12 @@ static void imu_trigger_handler(const struct device *dev, const struct sensor_tr
     }
 
     sample_count++;
-    if ((sample_count % 104U) == 1U) {
+    if ((sample_count % IMU_TARGET_ODR_HZ) == 1U) {
         int32_t ax_milli = (ax.val1 * 1000) + (ax.val2 / 1000);
         int32_t ay_milli = (ay.val1 * 1000) + (ay.val2 / 1000);
         int32_t az_milli = (az.val1 * 1000) + (az.val2 / 1000);
 
-        LOG_INF("IMU samples=%u accel_milli_ms2=(%d,%d,%d)", sample_count,
+        LOG_DBG("IMU samples=%u accel_milli_ms2=(%d,%d,%d)", sample_count,
                 ax_milli, ay_milli, az_milli);
     }
 

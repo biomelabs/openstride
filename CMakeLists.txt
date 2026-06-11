@@ -25,4 +25,9 @@ if(CONFIG_BT)
     target_sources(app PRIVATE apps/sensor/src/transport/ble/rsc_service.c)
 endif()
 
+# Battery module: ADC sampling + BLE Battery Service reporting.
+if(CONFIG_BT_BAS)
+    target_sources(app PRIVATE apps/sensor/src/battery/battery.c)
+endif()
+
 target_include_directories(app PRIVATE apps/sensor/src)

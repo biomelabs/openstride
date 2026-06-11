@@ -5,11 +5,19 @@
  *
  * Upstream board DTS uses st,lsm6dso, but the populated part is LSM6DS3TR-C
  * (WHO_AM_I 0x6A). The lsm6dso driver rejects that ID and never becomes ready.
+ *
+ * Battery ADC: vbat_pwr regulator (P1.15) gates a voltage divider whose
+ * output is on P1.14 (SAADC AIN7, channel@7 in xiao_nrf54l15_common.dtsi).
+ * channel@7 is already defined upstream; we just route it to zephyr,user.
  */
 
 / {
 	aliases {
 		imu0 = &lsm6ds3tr_c;
+	};
+
+	zephyr,user {
+		io-channels = <&adc 7>;
 	};
 };
 

@@ -1,5 +1,6 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/sys/atomic.h>
 
 #include "algo/foot/stride.h"
 #include "transport/transport.h"
@@ -14,6 +15,11 @@
 #include <zephyr/bluetooth/uuid.h>
 #endif
 
+#if IS_ENABLED(CONFIG_BT_BAS)
+#include <zephyr/bluetooth/services/bas.h>
+#include "battery/battery.h"
+#endif
+
 LOG_MODULE_REGISTER(main, LOG_LEVEL_INF);
 
 /* Bluetooth RSC Measurement: max 4 notifications per second. */
@@ -21,13 +27,22 @@ LOG_MODULE_REGISTER(main, LOG_LEVEL_INF);
 #define RSC_NOTIFY_POLL_MS         50
 
 #if IS_ENABLED(CONFIG_BT)
-/* Advertising data: flags + RSC service UUID (0x1814) */
+/* advertising data: flags + service UUIDs */
+#if IS_ENABLED(CONFIG_BT_BAS)
+static const struct bt_data ad[] = {
+	BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
+	BT_DATA_BYTES(BT_DATA_UUID16_ALL,
+		      BT_UUID_16_ENCODE(BT_UUID_RSCS_VAL),
+		      BT_UUID_16_ENCODE(BT_UUID_BAS_VAL)),
+};
+#else
 static const struct bt_data ad[] = {
 	BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
 	BT_DATA_BYTES(BT_DATA_UUID16_ALL, BT_UUID_16_ENCODE(BT_UUID_RSCS_VAL)),
 };
+#endif
 
-/* Scan response: full device name */
+/* scan response: full device name */
 static const struct bt_data sd[] = {
 	BT_DATA(BT_DATA_NAME_COMPLETE, CONFIG_BT_DEVICE_NAME,
 		sizeof(CONFIG_BT_DEVICE_NAME) - 1),
@@ -56,7 +71,7 @@ static K_WORK_DEFINE(adv_restart_work, adv_restart_work_handler);
 
 static void on_conn_recycled(void)
 {
-	/* Restart connectable advertising after the connection object is freed. */
+	/* restart connectable advertising after the connection object is freed. */
 	k_work_submit(&adv_restart_work);
 }
 
@@ -76,13 +91,32 @@ static stride_detector_t detector;
 static sdm_data_t        latest_sdm;
 static sdm_data_t        last_notified_sdm;
 static int64_t           last_notify_ms;
+static atomic_t          stride_notify_pending;
 K_MUTEX_DEFINE(sdm_mtx);
+
+/* true when snap would encode differently from prev in an RSC notification. */
+static bool sdm_report_changed(const sdm_data_t *snap, const sdm_data_t *prev)
+{
+	uint16_t speed_raw = (uint16_t)((snap->speed_mps * 256.0f) + 0.5f);
+	uint16_t prev_speed_raw = (uint16_t)((prev->speed_mps * 256.0f) + 0.5f);
+	uint8_t cadence_raw = (uint8_t)(snap->cadence_spm > 255.0f ? 255.0f : snap->cadence_spm);
+	uint8_t prev_cadence_raw = (uint8_t)(prev->cadence_spm > 255.0f ? 255.0f : prev->cadence_spm);
+	uint32_t dist_raw = (uint32_t)((snap->distance_m * 10.0f) + 0.5f);
+	uint32_t prev_dist_raw = (uint32_t)((prev->distance_m * 10.0f) + 0.5f);
+
+	return (speed_raw != prev_speed_raw) || (cadence_raw != prev_cadence_raw) ||
+	       (dist_raw != prev_dist_raw);
+}
 
 static void notify_sdm_if_due(const sdm_data_t *snap, bool force)
 {
 	int64_t now_ms = k_uptime_get();
 
 	if (!force && ((now_ms - last_notify_ms) < RSC_NOTIFY_MIN_INTERVAL_MS)) {
+		return;
+	}
+
+	if (!force && !sdm_report_changed(snap, &last_notified_sdm)) {
 		return;
 	}
 
@@ -105,7 +139,9 @@ static void on_imu(const imu_sample_t *s, void *ctx)
 	latest_sdm = data;
 	k_mutex_unlock(&sdm_mtx);
 
-	ARG_UNUSED(stride_hit);
+	if (stride_hit) {
+		atomic_set(&stride_notify_pending, 1);
+	}
 }
 #endif /* st_lsm6dsl */
 
@@ -117,6 +153,7 @@ int main(void)
 	latest_sdm = sdm_data_zero();
 	last_notified_sdm = sdm_data_zero();
 	last_notify_ms = 0;
+	atomic_set(&stride_notify_pending, 0);
 
 #if IS_ENABLED(CONFIG_BT)
 	int err = bt_enable(NULL);
@@ -127,6 +164,10 @@ int main(void)
 #endif
 
 	transport_init();
+
+#if IS_ENABLED(CONFIG_BT_BAS)
+	battery_init();
+#endif
 
 #if IS_ENABLED(CONFIG_BT)
 	int err2 = start_advertising();
@@ -157,7 +198,7 @@ int main(void)
 		k_mutex_lock(&sdm_mtx, K_FOREVER);
 		snap = latest_sdm;
 		k_mutex_unlock(&sdm_mtx);
-		notify_sdm_if_due(&snap, false);
+		notify_sdm_if_due(&snap, atomic_cas(&stride_notify_pending, 1, 0));
 	}
 
 	return 0;

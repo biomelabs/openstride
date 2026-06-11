@@ -66,7 +66,7 @@ copyfw:
 	echo "Done."
 
 debug:
-	uv run west debug --runner openocd -d $(BUILD_DIR)
+	uv run west debug -d $(BUILD_DIR)
 
 setup:
 	uv sync
