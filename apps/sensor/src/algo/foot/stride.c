@@ -6,16 +6,18 @@
 #define STRIDE_GRAVITY_MS2 9.80665f
 
 #define STRIDE_MAX_SAMPLE_INTERVAL_US 1000000LL
-#define STRIDE_MIN_INTERVAL_US 250000LL
+
+/* covers range from slow walk to Usain Bolt, with margin */
+#define STRIDE_MIN_INTERVAL_US 400000LL
 #define STRIDE_MAX_INTERVAL_US 2000000LL
 
 #define STRIDE_MIN_STANCE_S 0.035f
 #define STRIDE_MIN_SWING_S 0.120f
 
-#define STRIDE_STANCE_ACCEL_ENTER_BAND_MS2 1.8f
-#define STRIDE_STANCE_ACCEL_EXIT_BAND_MS2 2.6f
 #define STRIDE_STANCE_GYRO_ENTER_RAD_S 1.4f
 #define STRIDE_STANCE_GYRO_EXIT_RAD_S 2.1f
+
+#define STRIDE_OUTPUT_ALPHA 0.4f
 
 #define STRIDE_ATTITUDE_CORRECTION_GAIN 1.8f
 #define STRIDE_ATTITUDE_CORRECTION_INTEGRAL_GAIN 0.008f
@@ -23,7 +25,7 @@
 #define STRIDE_ATTITUDE_CORRECTION_GYRO_RAD_S 1.0f
 #define STRIDE_GYRO_BIAS_LIMIT_RAD_S 0.25f
 
-#define STRIDE_MIN_LENGTH_M 0.10f
+#define STRIDE_MIN_LENGTH_M 0.20f
 #define STRIDE_MAX_LENGTH_M 3.20f
 
 #define STRIDE_DECAY_START_FALLBACK_US 450000LL
@@ -217,14 +219,14 @@ static void stride_orientation_update(stride_detector_t *detector, const float a
 
 static bool stride_is_stance_sample(const stride_detector_t *detector, const float accel_mps2[3],
                                     const float gyro_rads[3]) {
-    float accel_norm = stride_norm3(accel_mps2);
     float gyro_norm = stride_norm3(gyro_rads);
-    float accel_band = detector->in_stance ? STRIDE_STANCE_ACCEL_EXIT_BAND_MS2
-                                           : STRIDE_STANCE_ACCEL_ENTER_BAND_MS2;
     float gyro_band =
         detector->in_stance ? STRIDE_STANCE_GYRO_EXIT_RAD_S : STRIDE_STANCE_GYRO_ENTER_RAD_S;
 
-    return (stride_absf(accel_norm - STRIDE_GRAVITY_MS2) <= accel_band) && (gyro_norm <= gyro_band);
+    (void)accel_mps2;
+    /* Running stance loading pushes accel well outside a 1g band; gyro alone is
+     * the reliable indicator that the foot is flat and briefly stationary. */
+    return gyro_norm <= gyro_band;
 }
 
 static void stride_reset_swing_integrator(stride_detector_t *detector) {
@@ -286,17 +288,37 @@ static bool stride_finalize_zupt(stride_detector_t *detector, int64_t timestamp_
 
     stride_length_m = sqrtf((corrected_displacement[0] * corrected_displacement[0]) +
                             (corrected_displacement[1] * corrected_displacement[1]));
-    stride_length_m = stride_clampf(stride_length_m, STRIDE_MIN_LENGTH_M, STRIDE_MAX_LENGTH_M);
+    if (stride_length_m < STRIDE_MIN_LENGTH_M) {
+        detector->last_zupt_timestamp_us = timestamp_us;
+        stride_reset_swing_integrator(detector);
+        return false;
+    }
+    if (stride_length_m > STRIDE_MAX_LENGTH_M) {
+        stride_length_m = STRIDE_MAX_LENGTH_M;
+    }
+
+    float raw_cadence = 60.0f / interval_s;
+    float raw_speed = stride_length_m / interval_s;
+
+    if (detector->last_stride_cadence_spm > 0.0f) {
+        detector->last_stride_cadence_spm =
+            (STRIDE_OUTPUT_ALPHA * raw_cadence) +
+            ((1.0f - STRIDE_OUTPUT_ALPHA) * detector->last_stride_cadence_spm);
+        detector->last_stride_speed_mps =
+            (STRIDE_OUTPUT_ALPHA * raw_speed) +
+            ((1.0f - STRIDE_OUTPUT_ALPHA) * detector->last_stride_speed_mps);
+    } else {
+        detector->last_stride_cadence_spm = raw_cadence;
+        detector->last_stride_speed_mps = raw_speed;
+    }
 
     detector->data.stride_count++;
     detector->data.distance_m += stride_length_m;
     detector->data.stride_length_m = stride_length_m;
-    detector->data.cadence_spm = 60.0f / interval_s;
-    detector->data.speed_mps = stride_length_m / interval_s;
+    detector->data.cadence_spm = detector->last_stride_cadence_spm;
+    detector->data.speed_mps = detector->last_stride_speed_mps;
     detector->data.update_latency_s = 0.0f;
 
-    detector->last_stride_cadence_spm = detector->data.cadence_spm;
-    detector->last_stride_speed_mps = detector->data.speed_mps;
     detector->last_stride_timestamp_us = timestamp_us;
     detector->last_zupt_timestamp_us = timestamp_us;
 
