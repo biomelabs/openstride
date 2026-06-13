@@ -5,6 +5,10 @@
 #include "transport/ble/rsc_service.h"
 #endif
 
+#if IS_ENABLED(CONFIG_BT_NUS)
+#include "transport/ble/imu_stream.h"
+#endif
+
 #if IS_ENABLED(CONFIG_ANT)
 #include "transport/ant/ant_transport.h"
 #endif
@@ -13,6 +17,9 @@ void transport_init(void)
 {
 #if IS_ENABLED(CONFIG_BT)
 	rsc_service_init();
+#endif
+#if IS_ENABLED(CONFIG_BT_NUS)
+	imu_stream_init();
 #endif
 #if IS_ENABLED(CONFIG_ANT)
 	ant_transport_init();

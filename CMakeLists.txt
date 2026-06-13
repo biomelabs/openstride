@@ -36,6 +36,11 @@ if(CONFIG_BT)
     target_sources(app PRIVATE apps/sensor/src/transport/ble/rsc_service.c)
 endif()
 
+# Raw IMU streaming over NUS.
+if(CONFIG_BT_NUS)
+    target_sources(app PRIVATE apps/sensor/src/transport/ble/imu_stream.c)
+endif()
+
 # Battery module: ADC sampling + BLE Battery Service reporting.
 if(CONFIG_BT_BAS)
     target_sources(app PRIVATE apps/sensor/src/battery/battery.c)

@@ -17,6 +17,10 @@
 #include <zephyr/bluetooth/uuid.h>
 #endif
 
+#if IS_ENABLED(CONFIG_BT_NUS)
+#include "transport/ble/imu_stream.h"
+#endif
+
 #if IS_ENABLED(CONFIG_BT_BAS)
 #include <zephyr/bluetooth/services/bas.h>
 #include "battery/battery.h"
@@ -141,6 +145,10 @@ static void on_imu(const imu_sample_t *s, void *ctx)
 	sdm_data_t data;
 
 	bool stride_hit = stride_detector_update(&detector, accel, gyro, s->timestamp_us, &data);
+
+#if IS_ENABLED(CONFIG_BT_NUS)
+	imu_stream_send(s);
+#endif
 
 	imu_cb_count++;
 	if ((imu_cb_count % 104U) == 1U) {
