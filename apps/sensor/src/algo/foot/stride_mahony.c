@@ -1,4 +1,4 @@
-#include "algo/foot/stride.h"
+#include "algo/foot/stride_mahony.h"
 
 #include <math.h>
 #include <stddef.h>

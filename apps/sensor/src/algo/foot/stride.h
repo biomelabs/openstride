@@ -1,36 +1,35 @@
 #ifndef STRIDE_H_
 #define STRIDE_H_
 
-#include <stdbool.h>
-#include <stdint.h>
+/*
+ * Algorithm selector. Include this header instead of stride_mahony.h or
+ * stride_eskf.h directly, then control which implementation is active at
+ * build time:
+ *
+ *   Mahony (default):
+ *     cmake .. -DSTRIDE_USE_ESKF=OFF
+ *
+ *   ESKF:
+ *     cmake .. -DSTRIDE_USE_ESKF=ON
+ *
+ * Both implementations expose the same public interface:
+ *   stride_detector_t     – detector state struct
+ *   stride_detector_init  – initialise a detector
+ *   stride_detector_update – feed one IMU sample, receive sdm_data_t
+ */
 
-#include "sdm/sdm_data.h"
+#ifdef STRIDE_USE_ESKF
 
-typedef struct stride_detector {
-    sdm_data_t data;
+#include "algo/foot/stride_eskf.h"
 
-    float orientation_q[4]; /* Body-to-world quaternion [w, x, y, z]. */
-    float gyro_bias[3];     /* Estimated gyro bias in body axes, rad/s. */
+typedef stride_eskf_detector_t stride_detector_t;
+#define stride_detector_init   stride_eskf_detector_init
+#define stride_detector_update stride_eskf_detector_update
 
-    float stance_candidate_s;
-    bool in_stance;
+#else /* Mahony */
 
-    float swing_elapsed_s;
-    float swing_velocity_world[3];
-    float swing_displacement_world[3];
+#include "algo/foot/stride_mahony.h"
 
-    float last_stride_speed_mps;
-    float last_stride_cadence_spm;
-    int64_t last_sample_timestamp_us;
-    int64_t last_zupt_timestamp_us;
-    int64_t last_stride_timestamp_us;
-
-    bool initialized;
-} stride_detector_t;
-
-void stride_detector_init(stride_detector_t *detector);
-
-bool stride_detector_update(stride_detector_t *detector, const float accel_mps2[3],
-                            const float gyro_rads[3], int64_t timestamp_us, sdm_data_t *out_data);
+#endif /* STRIDE_USE_ESKF */
 
 #endif /* STRIDE_H_ */

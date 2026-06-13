@@ -3,7 +3,7 @@
 
 #include <zephyr/ztest.h>
 
-#include "algo/foot/stride.h"
+#include "algo/foot/stride_mahony.h"
 #include "sdm/sdm_encode.h"
 
 static void feed_sample(struct stride_detector *detector, int64_t timestamp_us, float ax, float ay,

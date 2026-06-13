@@ -3,9 +3,19 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(openstride)
 
+# Stride algorithm: -DSTRIDE_USE_ESKF=ON to select ESKF, default is Mahony.
+option(STRIDE_USE_ESKF "Use Error State Kalman Filter instead of Mahony" OFF)
+
+if(STRIDE_USE_ESKF)
+    target_compile_definitions(app PRIVATE STRIDE_USE_ESKF)
+    set(STRIDE_SRC apps/sensor/src/algo/foot/stride_eskf.c)
+else()
+    set(STRIDE_SRC apps/sensor/src/algo/foot/stride_mahony.c)
+endif()
+
 target_sources(app PRIVATE
     apps/sensor/src/main.c
-    apps/sensor/src/algo/foot/stride.c
+    ${STRIDE_SRC}
     apps/sensor/src/sdm/sdm_encode.c
     apps/sensor/src/transport/transport.c
 )

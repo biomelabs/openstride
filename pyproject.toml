@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "anytree>=2.13.0",
+    "bleak>=3.0.2",
     "canopen>=2.4.1",
     "cbor>=1.0.0",
     "clang-format>=15.0.0",

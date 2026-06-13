@@ -28,15 +28,7 @@ static imu_data_cb_t user_cb;
 static void *user_ctx;
 static uint32_t sample_count;
 
-#if defined(CONFIG_SOC_NRF54L15_CPUAPP)
-/*
- * nRF54L15 runs the SoftDevice Controller: 416 Hz IMU + stride math starves
- * the link layer and causes supervision timeouts after a few seconds.
- */
-#define IMU_TARGET_ODR_HZ 104
-#else
 #define IMU_TARGET_ODR_HZ 416
-#endif
 
 #define IMU_POLL_STACK_SIZE 4096
 #define IMU_POLL_PRIORITY   7   /* preemptive, below BLE cooperative threads */
