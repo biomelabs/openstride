@@ -25,6 +25,18 @@
 #define STRIDE_ATTITUDE_CORRECTION_GYRO_RAD_S 1.0f
 #define STRIDE_GYRO_BIAS_LIMIT_RAD_S 0.25f
 
+/* IIR to track sensor gravity magnitude (accounts for ADXL375 ±14% scale tolerance).
+ * Only updates when quasi-static (gyro < 0.5 rad/s) AND the sample is close to the
+ * current estimate (outlier gate rejects rotation-reversal moments where gyro briefly
+ * dips below threshold while linear accel is still high).
+ * α = max(ALPHA_MIN, 1/(n+1)): snaps to the first accepted quiet sample, then
+ * asymptotes to ALPHA_MIN for long-term tracking across sessions and temperature. */
+#define STRIDE_GRAVITY_NORM_IIR_ALPHA_MIN  0.005f
+#define STRIDE_GRAVITY_NORM_IIR_GYRO_MAX   0.5f
+/* ±14% ADXL375 spec → valid gravity range [8.4, 11.2] m/s²; ±5 from nominal 9.81
+ * covers the full spec range while rejecting dynamic spikes (typically >14 m/s²). */
+#define STRIDE_GRAVITY_NORM_IIR_OUTLIER_MS2 5.0f
+
 #define STRIDE_MIN_LENGTH_M 0.20f
 #define STRIDE_MAX_LENGTH_M 3.20f
 
@@ -183,7 +195,23 @@ static void stride_orientation_update(stride_detector_t *detector, const float a
     stride_quat_rotate_world_to_body(q, gravity_world, gravity_body);
     accel_norm = stride_norm3(accel_mps2);
     gyro_norm = stride_norm3(gyro_rads);
-    if ((stride_absf(accel_norm - STRIDE_GRAVITY_MS2) <=
+
+    if ((gyro_norm < STRIDE_GRAVITY_NORM_IIR_GYRO_MAX) &&
+        (stride_absf(accel_norm - detector->gravity_norm_est) <
+         STRIDE_GRAVITY_NORM_IIR_OUTLIER_MS2)) {
+        float alpha = 1.0f / (float)(detector->gravity_norm_samples + 1U);
+
+        if (alpha < STRIDE_GRAVITY_NORM_IIR_ALPHA_MIN) {
+            alpha = STRIDE_GRAVITY_NORM_IIR_ALPHA_MIN;
+        }
+        detector->gravity_norm_est = ((1.0f - alpha) * detector->gravity_norm_est) +
+                                     (alpha * accel_norm);
+        if (detector->gravity_norm_samples < 65535U) {
+            detector->gravity_norm_samples++;
+        }
+    }
+
+    if ((stride_absf(accel_norm - detector->gravity_norm_est) <=
          STRIDE_ATTITUDE_CORRECTION_ACCEL_BAND_MS2) &&
         (gyro_norm <= STRIDE_ATTITUDE_CORRECTION_GYRO_RAD_S) && stride_normalize3(accel_unit)) {
         stride_cross3(gravity_body, accel_unit, correction);
@@ -249,7 +277,7 @@ static void stride_integrate_swing(stride_detector_t *detector, const float acce
 
     linear_world[0] = accel_world[0];
     linear_world[1] = accel_world[1];
-    linear_world[2] = accel_world[2] - STRIDE_GRAVITY_MS2;
+    linear_world[2] = accel_world[2] - detector->gravity_norm_est;
 
     for (axis = 0; axis < 3; axis++) {
         detector->swing_velocity_world[axis] += linear_world[axis] * dt_s;
@@ -361,6 +389,8 @@ void stride_detector_init(stride_detector_t *detector) {
         .data = sdm_data_zero(),
         .orientation_q = {1.0f, 0.0f, 0.0f, 0.0f},
         .gyro_bias = {0.0f, 0.0f, 0.0f},
+        .gravity_norm_est = STRIDE_GRAVITY_MS2,
+        .gravity_norm_samples = 0U,
         .stance_candidate_s = 0.0f,
         .in_stance = false,
         .swing_elapsed_s = 0.0f,

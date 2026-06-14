@@ -14,6 +14,7 @@
 #if IS_ENABLED(CONFIG_BT)
 #include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/bluetooth/conn.h>
+#include <zephyr/bluetooth/gatt.h>
 #include <zephyr/bluetooth/uuid.h>
 #endif
 
@@ -82,6 +83,38 @@ static void on_conn_recycled(void)
 	k_work_submit(&adv_restart_work);
 }
 
+static struct bt_gatt_exchange_params mtu_exchange_params;
+
+static void mtu_exchange_cb(struct bt_conn *conn, uint8_t err,
+			    struct bt_gatt_exchange_params *params)
+{
+	ARG_UNUSED(params);
+	uint16_t mtu = bt_gatt_get_mtu(conn);
+
+	if (err) {
+		LOG_WRN("MTU exchange failed: %u", err);
+	} else {
+		LOG_INF("MTU exchanged: %u", mtu);
+	}
+
+#if IS_ENABLED(CONFIG_BT_NUS)
+	imu_stream_on_mtu_updated(mtu);
+#endif
+}
+
+static void on_connected(struct bt_conn *conn, uint8_t err)
+{
+	if (err) {
+		return;
+	}
+	mtu_exchange_params.func = mtu_exchange_cb;
+	int ret = bt_gatt_exchange_mtu(conn, &mtu_exchange_params);
+
+	if (ret) {
+		LOG_WRN("MTU exchange request failed: %d", ret);
+	}
+}
+
 static void on_disconnected(struct bt_conn *conn, uint8_t reason)
 {
 	ARG_UNUSED(conn);
@@ -89,8 +122,9 @@ static void on_disconnected(struct bt_conn *conn, uint8_t reason)
 }
 
 BT_CONN_CB_DEFINE(conn_cb) = {
+	.connected    = on_connected,
 	.disconnected = on_disconnected,
-	.recycled = on_conn_recycled,
+	.recycled     = on_conn_recycled,
 };
 #endif /* CONFIG_BT */
 

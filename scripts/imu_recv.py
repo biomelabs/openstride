@@ -70,7 +70,7 @@ class Receiver:
                 self._writer.writerow([ts_ms, ax, ay, az, gx, gy, gz])
 
             self._count += 1
-            if self._count % 104 == 1:  # print ~1/sec at 416 Hz
+            if self._count % 104 == 1:  # print ~4/sec at 416 Hz
                 print(
                     f"t={ts_ms/1000:8.3f}s  "
                     f"a=({ax:+6.2f},{ay:+6.2f},{az:+6.2f}) m/s²  "

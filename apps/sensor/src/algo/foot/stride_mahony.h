@@ -11,6 +11,9 @@ typedef struct stride_detector {
 
     float orientation_q[4]; /* Body-to-world quaternion [w, x, y, z]. */
     float gyro_bias[3];     /* Estimated gyro bias in body axes, rad/s. */
+    float    gravity_norm_est;     /* IIR-filtered accel magnitude during quasi-static periods, m/s².
+                                    * Self-calibrates to this unit's actual scale factor. */
+    uint16_t gravity_norm_samples; /* quasi-static samples seen; drives convergent-α IIR. */
 
     float stance_candidate_s;
     bool in_stance;
