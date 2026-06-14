@@ -29,7 +29,13 @@ LOG_MODULE_REGISTER(imu_stream, LOG_LEVEL_INF);
 /* ~150 ms of samples at 416 Hz — enough headroom for a BLE connection event. */
 #define TX_QUEUE_DEPTH   64
 
-#define TX_STACK_SIZE   768
+/*
+ * The GATT notify call chain (bt_nus_send → bt_gatt_notify_cb → gatt_notify
+ * → bt_att_create_pdu → bt_att_send) consumes >1024 bytes of stack — the same
+ * path that forced SYSTEM_WORKQUEUE_STACK_SIZE up to 2048.  2048 here gives
+ * comfortable margin on top of the thread's own locals.
+ */
+#define TX_STACK_SIZE  2048
 /* One below the IMU poll thread (priority 7) so math is never preempted by TX. */
 #define TX_PRIORITY       8
 
@@ -38,8 +44,11 @@ K_MSGQ_DEFINE(imu_tx_queue, sizeof(imu_sample_t), TX_QUEUE_DEPTH, 4);
 K_THREAD_STACK_DEFINE(imu_tx_stack, TX_STACK_SIZE);
 static struct k_thread imu_tx_thread;
 
-static uint8_t batch_count = 2;
-static bool    stream_enabled;
+/* Static so it doesn't consume stack inside imu_tx_fn. */
+static uint8_t batch_buf[BUF_SIZE];
+
+static volatile uint8_t batch_count = 2;
+static volatile bool    stream_enabled;
 
 static void on_send_enabled(enum bt_nus_send_status status)
 {
@@ -60,7 +69,6 @@ static void imu_tx_fn(void *p1, void *p2, void *p3)
 	ARG_UNUSED(p2);
 	ARG_UNUSED(p3);
 
-	uint8_t batch_buf[BUF_SIZE];
 	uint8_t pos = 0;
 
 	while (true) {
